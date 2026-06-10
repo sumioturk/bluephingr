@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>phingr</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<h1>phingr</h1>
+
+<div class="split-container">
+  <!-- Left: Camera with screen region overlay -->
+  <div class="camera-panel" id="cameraPanel" style="position:relative;">
+    <img id="stream" src="/api/stream" alt="camera stream">
+    <canvas id="screenOverlay" style="position:absolute; top:0; left:0; cursor:crosshair;"></canvas>
+  </div>
+
+  <!-- Draggable divider -->
+  <div class="divider" id="divider"></div>
+
+  <!-- Right: Controls -->
+  <div class="control-panel">
+    <div class="row">
+      <span style="font-size:12px; color:#888;">Drag corners to match phone screen. Click inside to tap/swipe.</span>
+    </div>
+
+    <!-- Configuration -->
+    <div class="section">
+      <div class="section-title">Configuration</div>
+
+      <!-- Camera subsection -->
+      <div style="margin-bottom: 10px;">
+        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Camera</div>
+        <div class="row">
+          <button onclick="api('/api/camera/focus')">Focus & Lock</button>
+          <button onclick="api('/api/camera/autofocus')">Auto Focus</button>
+          <label style="font-size:12px; color:#aaa;">Sharp:</label>
+          <input type="range" id="sharpen" min="0" max="5" step="0.5" value="1" style="width:80px;"
+                 oninput="document.getElementById('stream').style.filter='contrast('+(1+this.value*0.05)+') saturate('+(1+this.value*0.05)+')'; document.getElementById('sharpVal').textContent=this.value;">
+          <span id="sharpVal" style="font-size:12px; color:#aaa;">1</span>
+        </div>
+        <div class="row" style="margin-top:6px;">
+          <label style="font-size:12px; color:#aaa;">Resolution:</label>
+          <button id="btn-preset-ultrahigh" onclick="setPreset('ultrahigh')" style="font-size:11px;">Ultra High (2K)</button>
+          <button id="btn-preset-high" onclick="setPreset('high')" style="font-size:11px;">High (FHD)</button>
+          <button id="btn-preset-baseline" onclick="setPreset('baseline')" style="font-size:11px;">Baseline (HD)</button>
+          <span id="presetStatus" style="font-size:11px; color:#888;"></span>
+        </div>
+      </div>
+
+      <!-- Screen Detection subsection -->
+      <div style="margin-bottom: 10px;">
+        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Screen Detection</div>
+        <div class="row">
+          <button onclick="detectScreen()">Detect Screen</button>
+          <span id="detectControls" style="display:none;">
+            <button onclick="detectNext()">Next</button>
+            <button onclick="detectAccept()">Accept</button>
+            <button onclick="detectCancel()">Cancel</button>
+            <span id="detectInfo" style="font-size:12px; color:#aaa;"></span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Calibration subsection -->
+      <div>
+        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Cursor Calibration</div>
+        <div class="row">
+          <button onclick="startCalibration()">Calibrate</button>
+          <span id="calibInfo" style="font-size:12px; color:#aaa;"></span>
+        </div>
+        <div id="calibInstructions" style="display:none; font-size:12px; color:#0f0; padding:6px; background:#1a2a1a; border-radius:4px; margin-top:4px;"></div>
+      </div>
+    </div>
+
+    <!-- ── Mouse Section ── -->
+    <div class="section">
+      <div class="section-title">Mouse</div>
+      <div class="speed-row">
+        <label>Fine:</label>
+        <input type="range" id="speed" min="1" max="20" value="3">
+        <span id="speedVal">3</span>
+      </div>
+      <div class="speed-row">
+        <label>Coarse:</label>
+        <input type="range" id="speedCoarse" min="10" max="100" value="30">
+        <span id="speedCoarseVal">30</span>
+      </div>
+
+      <div style="display: flex; gap: 24px; align-items: start; flex-wrap: wrap;">
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Cursor</div>
+          <table class="dpad-table" cellspacing="0">
+            <tr><td></td><td></td><td><button class="coarse" onmousedown="startMoveCoarse(0,-1)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMoveCoarse(0,-1)" ontouchend="stopMove()">&#9650;</button></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td><button onmousedown="startMove(0,-1)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove(0,-1)" ontouchend="stopMove()">&#9650;</button></td><td></td><td></td></tr>
+            <tr><td><button class="coarse" onmousedown="startMoveCoarse(-1,0)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMoveCoarse(-1,0)" ontouchend="stopMove()">&#9664;</button></td><td><button onmousedown="startMove(-1,0)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove(-1,0)" ontouchend="stopMove()">&#9664;</button></td><td><button class="center" onclick="api('/api/mouse/click')">&#9679;</button></td><td><button onmousedown="startMove(1,0)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove(1,0)" ontouchend="stopMove()">&#9654;</button></td><td><button class="coarse" onmousedown="startMoveCoarse(1,0)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMoveCoarse(1,0)" ontouchend="stopMove()">&#9654;</button></td></tr>
+            <tr><td></td><td></td><td><button onmousedown="startMove(0,1)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMove(0,1)" ontouchend="stopMove()">&#9660;</button></td><td></td><td></td></tr>
+            <tr><td></td><td></td><td><button class="coarse" onmousedown="startMoveCoarse(0,1)" onmouseup="stopMove()" onmouseleave="stopMove()" ontouchstart="startMoveCoarse(0,1)" ontouchend="stopMove()">&#9660;</button></td><td></td><td></td></tr>
+          </table>
+        </div>
+
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Actions</div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button onclick="api('/api/mouse/reset')">Reset</button>
+            <button onclick="api('/api/mouse/scroll', {dy: -150})">Scroll Down</button>
+            <button onclick="api('/api/mouse/scroll', {dy: 150})">Scroll Up</button>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Corners</div>
+          <div class="dpad" style="grid-template-columns: 48px 48px; grid-template-rows: 48px 48px;">
+            <button onclick="api('/api/mouse/corner', {corner:'top_left'})">TL</button>
+            <button onclick="api('/api/mouse/corner', {corner:'top_right'})">TR</button>
+            <button onclick="api('/api/mouse/corner', {corner:'bottom_left'})">BL</button>
+            <button onclick="api('/api/mouse/corner', {corner:'bottom_right'})">BR</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Keyboard Section ── -->
+    <div class="section">
+      <div class="section-title">Keyboard</div>
+      <div class="row">
+        <button onclick="api('/api/keyboard/hotkey', {name:'home'})">Home</button>
+        <button onclick="api('/api/keyboard/hotkey', {name:'app_switch'})">App Switch</button>
+        <button onclick="api('/api/keyboard/hotkey', {name:'spotlight'})">Spotlight</button>
+        <button onclick="api('/api/keyboard/hotkey', {name:'screenshot'})">Screenshot</button>
+      </div>
+
+      <div style="display: flex; gap: 24px; align-items: start; flex-wrap: wrap;">
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Arrow Keys</div>
+          <div class="dpad">
+            <div></div>
+            <button onclick="api('/api/keyboard/key', {key:'up'})">&#9650;</button>
+            <div></div>
+            <button onclick="api('/api/keyboard/key', {key:'left'})">&#9664;</button>
+            <button class="center" onclick="api('/api/keyboard/key', {key:'space'})">Spc</button>
+            <button onclick="api('/api/keyboard/key', {key:'right'})">&#9654;</button>
+            <div></div>
+            <button onclick="api('/api/keyboard/key', {key:'down'})">&#9660;</button>
+            <div></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 12px; color: #888; margin-bottom: 4px;">Special</div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <button onclick="api('/api/keyboard/key', {key:'backspace'})">Delete</button>
+            <button onclick="api('/api/keyboard/key', {key:'enter'})">Enter</button>
+            <button onclick="api('/api/keyboard/key', {key:'tab'})">Tab</button>
+            <button onclick="api('/api/keyboard/key', {key:'escape'})">Esc</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top: 8px;">
+        <input id="typeInput" placeholder="Type text..." style="flex:1"
+               onkeydown="if(event.key==='Enter'){api('/api/keyboard/type', {text: this.value}); this.value='';}">
+        <button onclick="api('/api/keyboard/type', {text: document.getElementById('typeInput').value}); document.getElementById('typeInput').value='';">Type</button>
+      </div>
+    </div>
+
+    <!-- ── libimobiledevice ── -->
+    <div class="section">
+      <div class="section-title">libimobiledevice</div>
+
+      <!-- Command executor -->
+      <div class="row" style="margin-bottom:4px;">
+        <input id="ideviceCmd" placeholder="ideviceinfo -k DeviceName" style="flex:1; font-family:monospace; font-size:12px;"
+               onkeydown="if(event.key==='Enter') runIdeviceCmd()">
+        <button onclick="runIdeviceCmd()">Run</button>
+        <button onclick="clearIdeviceOutput()" style="font-size:11px;">Clear</button>
+      </div>
+      <!-- Quick commands -->
+      <div class="row" style="flex-wrap:wrap; gap:4px; margin-bottom:6px;">
+        <button onclick="setCmd('idevice_id -l')" style="font-size:10px;">list devices</button>
+        <button onclick="setCmd('ideviceinfo')" style="font-size:10px;">device info</button>
+        <button onclick="setCmd('idevicename')" style="font-size:10px;">name</button>
+        <button onclick="setCmd('idevicediagnostics restart')" style="font-size:10px;">restart</button>
+        <button onclick="setCmd('idevicediagnostics sleep')" style="font-size:10px;">sleep</button>
+        <button onclick="setCmd('idevicepair pair')" style="font-size:10px;">pair</button>
+        <button onclick="setCmd('ideviceinstaller -l')" style="font-size:10px;">apps</button>
+        <button onclick="setCmd('idevicescreenshot /tmp/sc.png')" style="font-size:10px;">screenshot</button>
+      </div>
+      <!-- stdout / stderr output -->
+      <div id="ideviceOutput" style="
+        min-height:60px; max-height:200px; overflow-y:auto;
+        background:#060606; border:1px solid #2a2a2a; border-radius:4px;
+        padding:6px; font-family:monospace; font-size:11px;
+        color:#ccc; white-space:pre-wrap; word-break:break-all;
+      "></div>
+
+      <!-- Syslog stream -->
+      <div style="margin-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; flex-wrap:wrap; gap:4px;">
+          <span style="font-size:12px; color:#888;">Syslog</span>
+          <span style="display:flex; gap:4px; align-items:center;">
+            <input id="syslogProcess" placeholder="-p process" style="width:100px; font-size:11px;" title="Server-side idevicesyslog -p filter">
+            <input id="syslogFilter" placeholder="text filter" style="width:90px; font-size:11px;" title="Client-side text filter">
+            <button onclick="clearSyslog()" style="font-size:11px;">Clear</button>
+            <button id="btn-syslog-toggle" onclick="toggleSyslog()" style="font-size:11px;">Start</button>
+          </span>
+        </div>
+        <div id="syslogOutput" style="
+          height:240px; overflow-y:scroll;
+          background:#060606; border:1px solid #2a2a2a; border-radius:4px;
+          padding:6px; font-family:monospace; font-size:11px;
+          color:#0f0; word-break:break-all; white-space:pre-wrap;
+        "></div>
+      </div>
+    </div>
+
+    <!-- ── Relays Section ── -->
+    <div class="section">
+      <div class="section-title">External Relays</div>
+      <div class="row" id="relayRow">
+        <button id="relay-0" class="relay-btn" onclick="toggleRelay(0)">Relay 1</button>
+        <button id="relay-1" class="relay-btn" onclick="toggleRelay(1)">Relay 2</button>
+        <button id="relay-2" class="relay-btn" onclick="toggleRelay(2)">Relay 3</button>
+        <button id="relay-3" class="relay-btn" onclick="toggleRelay(3)">Relay 4</button>
+        <span id="relayStatus" style="font-size:11px; color:#888;"></span>
+      </div>
+    </div>
+
+    <div id="log"></div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script src="/static/perspective.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+name: Reset to Home Screen
+device: http://phingr-e825.local:8080
+---
+# Press home and swipe to first page
+- pressKey: home
+- wait: 0.5
+- swipe:
+    direction: RIGHT
+    times: 10
+- wait: 0.5

@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>phingr-cli</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- Banner -->
+<header class="banner">
+  <h1>phingr-cli</h1>
+</header>
+
+<!-- Device Connection Bar -->
+<div class="device-bar">
+  <span class="device-bar-label">Device:</span>
+  <input id="device-url" type="text" placeholder="http://192.168.1.50:8080" value="">
+  <button id="btn-device-connect" class="btn btn-sm">Connect</button>
+  <span id="device-status" class="device-status disconnected">Disconnected</span>
+  <img id="device-preview" class="device-preview" alt="" style="display:none">
+</div>
+
+<!-- Tab Navigation -->
+<nav class="tab-bar">
+  <button class="tab-btn active" data-view="list">Flows</button>
+  <button class="tab-btn" data-view="editor">Editor</button>
+  <button class="tab-btn" data-view="device">Device & Templates</button>
+</nav>
+
+<main>
+  <!-- Flows List -->
+  <section id="view-list" class="view active">
+    <div class="toolbar">
+      <h2>Flows</h2>
+      <button id="btn-refresh" class="btn">Refresh</button>
+      <button id="btn-new-flow" class="btn btn-primary">New Flow</button>
+      <button id="btn-export-all" class="btn">Export All</button>
+    </div>
+    <table id="flows-table">
+      <thead>
+        <tr><th>Name</th><th>File</th><th>Commands</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="flows-tbody"></tbody>
+    </table>
+    <p id="flows-empty" class="muted" style="display:none">No flows yet. Create one with the Editor.</p>
+
+    <div class="toolbar" style="margin-top:24px">
+      <h2>Import</h2>
+      <label class="btn file-input-btn" for="import-file">Choose File</label>
+      <input type="file" id="import-file" accept=".zip" class="file-input-hidden">
+      <span id="import-filename" class="muted">No file selected</span>
+      <button id="btn-import" class="btn btn-primary">Import</button>
+    </div>
+
+    <h3>Recent Runs</h3>
+    <table id="runs-table">
+      <thead>
+        <tr><th>Flow</th><th>Status</th><th>Progress</th><th>Started</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="runs-tbody"></tbody>
+    </table>
+    <p id="runs-empty" class="muted" style="display:none">No runs yet.</p>
+  </section>
+
+  <!-- YAML Editor -->
+  <section id="view-editor" class="view">
+    <div class="toolbar">
+      <h2>Flow Editor</h2>
+      <div class="input-row">
+        <label>File: <input id="editor-filename" type="text" placeholder="my-flow" style="width:160px"></label>
+      </div>
+      <button id="btn-save" class="btn btn-primary">Save</button>
+      <button id="btn-validate" class="btn">Validate</button>
+      <span id="editor-status" class="muted"></span>
+    </div>
+    <div class="editor-layout">
+      <div class="editor-panel">
+        <div class="editor-with-gutter">
+          <pre class="editor-gutter" id="editor-gutter"></pre>
+          <textarea id="editor-yaml" spellcheck="false" placeholder="name: My Flow
+device: http://192.168.1.50:8080
+---
+- pressKey: home
+- wait: 1
+- tapOn: &quot;Settings&quot;
+"></textarea>
+        </div>
+      </div>
+      <div class="editor-divider" id="editor-divider"></div>
+      <div class="editor-sidebar">
+        <h3>Flow Structure</h3>
+        <div id="editor-tree" class="tree-view" style="margin-bottom:12px">Save to see structure</div>
+
+        <h3>Registered Templates</h3>
+        <div id="editor-templates-list" class="log-box" style="max-height:120px;margin-bottom:12px">Loading...</div>
+
+        <h3>DSL Reference</h3>
+        <div class="reference-box">
+<pre># Tap element (template match)
+- tapOn: "Settings"
+
+# Tap element with offset
+- tapOn:
+    element: "BT_toggle"
+    offset: "0.9, 0.5"
+
+# Tap by coordinates
+- tapOn: "0.5, 0.3"
+- tapOn:
+    point: "0.5, 0.3"
+
+# Long press / Double tap
+- longPressOn: "Settings"
+- doubleTapOn: "0.5, 0.3"
+
+# Swipe until element found
+- swipeUntilFound:
+    element: "Settings"
+    direction: LEFT
+    maxSwipes: 10
+
+# Type text
+- inputText: "hello world"
+
+# Press key / hotkey
+- pressKey: enter
+- pressKey: home
+
+# Swipe
+- swipe: UP
+- swipe:
+    direction: DOWN
+    times: 3
+
+# Click at current cursor (no movement)
+- click
+
+# Wait
+- wait: 2
+
+# Repeat
+- repeat:
+    times: 3
+    action:
+      - swipe: DOWN
+      - wait: 0.5
+
+# Offset: 0,0=top-left
+#   0.5,0.5=center (default)
+#   1,1=bottom-right</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Device + Templates + Run -->
+  <section id="view-device" class="view">
+    <!-- Run status bar (shown when a flow is running) -->
+    <div id="run-bar" class="run-bar" style="display:none">
+      <span id="run-bar-title" class="muted">Running...</span>
+      <div class="progress-bar" style="flex:1"><div id="run-progress-fill" class="progress-fill"></div></div>
+      <span id="run-progress-text" class="muted">0/0</span>
+      <span id="run-status-badge" class="badge">pending</span>
+      <button id="btn-run-stop" class="btn btn-danger btn-sm">Stop</button>
+    </div>
+
+    <div class="device-templates-layout">
+      <!-- Left: Device control iframe -->
+      <div class="device-iframe-panel" id="device-iframe-panel">
+        <iframe id="device-iframe" src="" frameborder="0"></iframe>
+      </div>
+
+      <div class="panel-divider" id="divider-1"></div>
+
+      <!-- Center: Screenshot + tagging / annotated match -->
+      <div class="device-capture-panel" id="device-capture-panel">
+        <div class="tpl-toolbar">
+          <button id="btn-tpl-refresh" class="btn">Capture</button>
+          <button id="btn-tpl-test" class="btn btn-primary">Test Match</button>
+        </div>
+        <div class="tpl-toolbar">
+          <div class="input-row" style="flex:1">
+            <input id="tpl-name" type="text" placeholder="Template name" style="width:100%">
+          </div>
+          <div class="input-row tpl-offset-group">
+            <label>Offset:</label>
+            <input id="tpl-offset-x" type="number" min="0" max="1" step="0.1" value="0.5" title="X (0=left, 1=right)">
+            <input id="tpl-offset-y" type="number" min="0" max="1" step="0.1" value="0.5" title="Y (0=top, 1=bottom)">
+          </div>
+        </div>
+
+        <div class="tpl-capture-area">
+          <div class="teach-screenshot-container">
+            <img id="tpl-screenshot" alt="Click Capture to take screenshot" draggable="false">
+            <canvas id="tpl-canvas"></canvas>
+          </div>
+          <div id="tpl-status" class="muted">Connect to device, then click Capture. Drag on screenshot to register template.</div>
+        </div>
+      </div>
+
+      <div class="panel-divider" id="divider-2"></div>
+
+      <!-- Right: Templates list + run log -->
+      <div class="device-tpl-list-panel" id="device-tpl-list-panel">
+        <h3>Templates</h3>
+        <div id="tpl-list" class="log-box" style="max-height:40vh">Loading...</div>
+
+        <h3>Run Log</h3>
+        <div id="run-log" class="log-box" style="max-height:40vh"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+[Unit]
+Description=phingr Touch HID Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/python3 /opt/phingr/setup_gadget.py
+ExecStart=/usr/bin/python3 /opt/phingr/touch_server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

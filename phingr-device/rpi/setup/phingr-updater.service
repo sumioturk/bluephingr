@@ -1,0 +1,13 @@
+[Unit]
+Description=phingr Auto-Updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/phingr/updater.py --repo-dir /home/sumioturk/phingr --branch master --interval 300 --restart
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

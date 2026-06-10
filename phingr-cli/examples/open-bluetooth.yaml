@@ -1,0 +1,26 @@
+name: Open Bluetooth Settings
+device: http://phingr-e825.local:8080
+---
+# 1. Go to home screen
+- pressKey: home
+- wait: 1
+
+# 2. Swipe left until OmniParser finds Settings icon
+- swipeUntilFound:
+    element: "Settings"
+    direction: LEFT
+    maxSwipes: 10
+
+# 3. Tap Settings
+- tapOn: "Settings"
+- wait: 1
+
+# 4. Scroll down until Bluetooth is found
+- swipeUntilFound:
+    element: "Bluetooth"
+    direction: UP
+    maxSwipes: 10
+
+# 5. Tap Bluetooth
+- tapOn: "Bluetooth"
+- wait: 1
