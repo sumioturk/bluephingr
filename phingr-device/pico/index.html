@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>phingr relays</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.2rem; }
+    .relay { display: flex; align-items: center; justify-content: space-between;
+             padding: .75rem 1rem; margin: .5rem 0; border: 1px solid #ccc; border-radius: 8px; }
+    button { padding: .5rem 1rem; border: 0; border-radius: 6px; cursor: pointer; font-size: 1rem; }
+    .on  { background: #2e7d32; color: #fff; }
+    .off { background: #ddd; color: #333; }
+    #status { color: #888; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h1>phingr relays</h1>
+  <div id="relays"></div>
+  <p id="status">loading…</p>
+
+  <script>
+    async function load() {
+      try {
+        const r = await fetch('/api/relay');
+        const data = await r.json();
+        render(data.relays || []);
+        document.getElementById('status').textContent =
+          data.available ? 'connected' : 'GPIO unavailable (state simulated)';
+      } catch (e) {
+        document.getElementById('status').textContent = 'error: ' + e;
+      }
+    }
+
+    function render(relays) {
+      const box = document.getElementById('relays');
+      box.innerHTML = '';
+      relays.forEach(rel => {
+        const row = document.createElement('div');
+        row.className = 'relay';
+        const label = document.createElement('span');
+        label.textContent = rel.name;
+        const btn = document.createElement('button');
+        btn.textContent = rel.on ? 'ON' : 'OFF';
+        btn.className = rel.on ? 'on' : 'off';
+        btn.onclick = () => toggle(rel.index);
+        row.appendChild(label);
+        row.appendChild(btn);
+        box.appendChild(row);
+      });
+    }
+
+    async function toggle(index) {
+      await fetch('/api/relay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index, toggle: true }),
+      });
+      load();
+    }
+
+    load();
+  </script>
+</body>
+</html>
